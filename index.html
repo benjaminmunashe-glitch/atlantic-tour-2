@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ask Atlantic</title>
+<style>
+  :root {
+    --sea: #0f4c5c;
+    --sea-deep: #0a3540;
+    --foam: #e6f2f1;
+    --sand: #f5efe4;
+    --card: #ffffff;
+    --ink: #1e2a2e;
+    --muted: #6b7a7e;
+    --line: #e2dccf;
+    --error-bg: #fdecea;
+    --error-ink: #8a1f17;
+    --accent: #e3a857;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sea: #2b8a99;
+      --sea-deep: #0b2228;
+      --foam: #12343b;
+      --sand: #0f1a1d;
+      --card: #1a272b;
+      --ink: #e8eef0;
+      --muted: #93a4a8;
+      --line: #263539;
+      --error-bg: #3a1a17;
+      --error-ink: #f6b4ac;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--sand);
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+  }
+  .app {
+    width: 100%;
+    max-width: 720px;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--sand);
+  }
+  header {
+    background: linear-gradient(160deg, var(--sea) 0%, var(--sea-deep) 100%);
+    color: #fff;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  }
+  .logo {
+    width: 40px; height: 40px; flex: none;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.14);
+    display: grid; place-items: center;
+  }
+  header h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: normal;
+    letter-spacing: 0.3px;
+  }
+  header p { margin: 2px 0 0; font-size: 0.8rem; opacity: 0.8; }
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .row { display: flex; flex-direction: column; max-width: 85%; }
+  .row.user { align-self: flex-end; align-items: flex-end; }
+  .row.bot  { align-self: flex-start; align-items: flex-start; }
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 18px;
+    line-height: 1.45;
+    font-size: 0.98rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  .user .bubble {
+    background: var(--sea);
+    color: #fff;
+    border-bottom-right-radius: 5px;
+  }
+  .bot .bubble {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .bot.error .bubble {
+    background: var(--error-bg);
+    color: var(--error-ink);
+    border-color: transparent;
+  }
+  .meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin: 4px 6px 0;
+  }
+  .thinking .bubble { color: var(--muted); font-style: italic; }
+  .dots span {
+    display: inline-block;
+    animation: blink 1.2s infinite both;
+  }
+  .dots span:nth-child(2) { animation-delay: 0.2s; }
+  .dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+  form {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: var(--card);
+    border-top: 1px solid var(--line);
+  }
+  #question {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 16px; /* prevents iOS zoom */
+    padding: 12px 16px;
+    border-radius: 24px;
+    border: 1px solid var(--line);
+    background: var(--sand);
+    color: var(--ink);
+    outline: none;
+  }
+  #question:focus { border-color: var(--sea); box-shadow: 0 0 0 3px rgba(15,76,92,0.15); }
+  #send {
+    font: inherit;
+    font-weight: 600;
+    padding: 0 20px;
+    border: none;
+    border-radius: 24px;
+    background: var(--sea);
+    color: #fff;
+    cursor: pointer;
+  }
+  #send:hover { background: var(--sea-deep); }
+  #send:disabled { opacity: 0.5; cursor: default; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo" aria-hidden="true">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round">
+        <path d="M2 15c2 0 2-1.5 4-1.5S8 15 10 15s2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/>
+        <path d="M2 19c2 0 2-1.5 4-1.5S8 19 10 19s2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/>
+        <path d="M7 11l5-7 5 7" stroke="#e3a857"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Ask Atlantic</h1>
+      <p>Atlantic Coast Tours · West of Ireland</p>
+    </div>
+  </header>
+
+  <main id="chat" aria-live="polite"></main>
+
+  <form id="form" autocomplete="off">
+    <input id="question" type="text" placeholder="Ask about tours, prices, availability…" aria-label="Your question">
+    <button id="send" type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+  const CSV_URL = "https://docs.google.com/spreadsheets/d/1balBGf8QhZ5dc-RCCAPt2kcrcf6m_YRh0HL_r8bBtJw/export?format=csv";
+  const BRAIN_URL = "https://luas-class.kluxy.app/chat";
+  const SYSTEM = "You are Ask Atlantic, the customer assistant for Atlantic Coast Tours. Answer only from the live data you are given. Quote exact prices in euro and slots left. If something is not in the data, say so. If a value looks implausible, say so and suggest the customer checks with staff. Be warm and brief.";
+
+  const chat = document.getElementById("chat");
+  const form = document.getElementById("form");
+  const input = document.getElementById("question");
+  const sendBtn = document.getElementById("send");
+
+  function addBubble(who, text, metaText, extraClass) {
+    const row = document.createElement("div");
+    row.className = "row " + who + (extraClass ? " " + extraClass : "");
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;           // textContent keeps it safe from HTML injection
+    row.appendChild(bubble);
+    if (metaText) {
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = metaText;
+      row.appendChild(meta);
+    }
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
+
+  function addThinking() {
+    const row = document.createElement("div");
+    row.className = "row bot thinking";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = 'Thinking<span class="dots"><span>.</span><span>.</span><span>.</span></span>';
+    row.appendChild(bubble);
+    chat.appendChild(row);
+    chat.scrollTop = chat.scrollHeight;
+    return row;
+  }
+
+  function timeStamp(d) {
+    const p = n => String(n).padStart(2, "0");
+    return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  }
+
+  async function ask(question) {
+    // 1. Fetch the live catalogue
+    let csvRes;
+    try {
+      csvRes = await fetch(CSV_URL, { cache: "no-store" });
+    } catch (e) {
+      throw new Error("Couldn't reach the tour catalogue (" + e.message + ").");
+    }
+    if (!csvRes.ok) throw new Error("Tour catalogue returned HTTP " + csvRes.status + ".");
+    const csv = await csvRes.text();
+    const fetchedAt = new Date();
+
+    // 2. Send question + CSV to the class brain
+    let brainRes;
+    try {
+      brainRes = await fetch(BRAIN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: SYSTEM,
+          messages: [{
+            role: "user",
+            content: "Live data (CSV):\n" + csv + "\n\nCustomer question: " + question
+          }]
+        })
+      });
+    } catch (e) {
+      throw new Error("Couldn't reach the assistant (" + e.message + ").");
+    }
+
+    const raw = await brainRes.text();
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { throw new Error("Assistant sent an unreadable response (HTTP " + brainRes.status + "): " + raw.slice(0, 200)); }
+
+    if (!brainRes.ok) {
+      const msg = data.error ? (typeof data.error === "string" ? data.error : JSON.stringify(data.error)) : raw.slice(0, 200);
+      throw new Error("Assistant returned HTTP " + brainRes.status + ": " + msg);
+    }
+    if (typeof data.reply !== "string" || !data.reply.trim()) {
+      throw new Error("Assistant response had no \"reply\" field.");
+    }
+
+    return { reply: data.reply.trim(), fetchedAt };
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();   // Enter in the input also submits the form
+    const question = input.value.trim();
+    if (!question || sendBtn.disabled) return;
+
+    addBubble("user", question);
+    input.value = "";
+    sendBtn.disabled = true;
+    const thinking = addThinking();
+
+    try {
+      const { reply, fetchedAt } = await ask(question);
+      thinking.remove();
+      addBubble("bot", reply, "Data fetched live at " + timeStamp(fetchedAt));
+    } catch (err) {
+      thinking.remove();
+      addBubble("bot", "Sorry, something went wrong: " + (err && err.message ? err.message : String(err)), null, "error");
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  });
+
+  addBubble("bot", "Dia dhuit! I'm Ask Atlantic. Ask me about our tours, prices or how many places are left, and I'll check the live catalogue for you.");
+  input.focus();
+</script>
+</body>
+</html>
